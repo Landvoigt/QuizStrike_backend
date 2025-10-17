@@ -1,3 +1,18 @@
 from django.db import models
 
-# Create your models here.
+from quiz.models import Quiz
+from category.models import Category
+
+
+class Question(models.Model):
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
+    title = models.CharField(max_length=512, unique=True)
+    description = models.CharField(max_length=2048)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    time = models.IntegerField()
+    points = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
