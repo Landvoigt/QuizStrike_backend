@@ -39,8 +39,13 @@ INSTALLED_APPS = [
     'rest_framework',
 
     # apps
+    'quiz',
+    'category',
     'question',
-    'score'
+    'answer',
+    'player',
+    'response',
+    'score',
 ]
 
 MIDDLEWARE = [
