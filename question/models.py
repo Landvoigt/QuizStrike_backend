@@ -11,6 +11,8 @@ class Question(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     time = models.IntegerField()
     points = models.IntegerField()
+    image = models.ImageField(upload_to='question_images/', null=True, blank=True)
+    transparent = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
