@@ -1,3 +1,8 @@
-from django.shortcuts import render
+from rest_framework.viewsets import ModelViewSet
 
-# Create your views here.
+from .models import Answer
+from .serializers import AnswerSerializer
+
+class AnswerViewSet(ModelViewSet):
+    queryset = Answer.objects.all()
+    serializer_class = AnswerSerializer
