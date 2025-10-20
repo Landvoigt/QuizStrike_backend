@@ -1,3 +1,9 @@
-from django.shortcuts import render
+from rest_framework.viewsets import ModelViewSet
 
-# Create your views here.
+from .models import Score
+from .serializers import ScoreSerializer
+
+
+class ScoreViewSet(ModelViewSet):
+    queryset = Score.objects.all()
+    serializer_class = ScoreSerializer
