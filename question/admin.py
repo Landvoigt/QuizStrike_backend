@@ -16,18 +16,37 @@ class AnswerInline(admin.TabularInline):
 
     class Media:
         css = {
-            'all': ('admin/css/wide-fields.css',)
+            'all': ('quizstrike/css/admin_custom.css',)
         }
 
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ('title', 'quiz', 'category', 'time', 'points', 'transparent', 'display_image')
-    list_filter = ('quiz', 'category', 'transparent')
-    search_fields = ('title', 'description')
-    readonly_fields = ('created_at', 'updated_at', 'display_image')
-    ordering = ('-created_at',)
+    list_display = ('quiz', 'category', 'title', 'transparent', 'display_image', 'created_at')
+    list_filter = ('quiz', 'category', 'title')
+    search_fields = ('quiz', 'category', 'title',)
+    readonly_fields = ('time_ms', 'points', 'created_at', 'updated_at', 'display_image')
+    ordering = ('title',)
     inlines = [AnswerInline]
-    fields = ('quiz', 'title', 'description', 'category', 'time', 'points', 
-             'image', 'display_image', 'transparent', 'created_at', 'updated_at')
+    fieldsets = (
+        ('Selection', {
+            'fields': ('quiz', 'category')
+        }),
+        ('Configuration', {
+            'fields': ('title', 'description', 'image', 'display_image', 'transparent')
+        }),
+        ('Standards', {
+            'fields': ('time_ms', 'points')
+        }),
+        ('Creation Information', {
+            'fields': ('created_at', 'updated_at')
+        }),
+    )
+
+    def time_ms(self, obj):
+        if obj and obj.time is not None:
+            return f"{obj.time} ms"
+        return "-"
+    time_ms.short_description = 'time'
+    time_ms.admin_order_field = 'time'
 
     def display_image(self, obj):
         if obj.image:
