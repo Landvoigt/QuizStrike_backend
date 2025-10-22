@@ -7,6 +7,7 @@ class Answer(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     text = models.CharField(max_length=2048, unique=True)
     correct = models.BooleanField(default=False)
+    active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
