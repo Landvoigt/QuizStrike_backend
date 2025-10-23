@@ -40,11 +40,11 @@ INSTALLED_APPS = [
 
     # apps
     'quiz',
-    'category',
-    'question',
-    'answer',
+    'category.apps.CategoryConfig',
+    'question.apps.QuestionConfig',
+    'answer.apps.AnswerConfig',
     'player',
-    'response',
+    'response.apps.ResponseConfig',
     'score',
 ]
 
