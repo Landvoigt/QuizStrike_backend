@@ -6,3 +6,4 @@ from .serializers import ResponseSerializer
 class ResponseViewSet(ModelViewSet):
     queryset = Response.objects.all()
     serializer_class = ResponseSerializer
+    

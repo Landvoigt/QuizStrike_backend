@@ -9,5 +9,8 @@ class Response(models.Model):
     score = models.ForeignKey(Score, related_name="responses", on_delete=models.CASCADE)
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     answer = models.ForeignKey(Answer, on_delete=models.CASCADE)
-    time = models.IntegerField()
+    time = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.score.player.name} → {self.question.title}"
