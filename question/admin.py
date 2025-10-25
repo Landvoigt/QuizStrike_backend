@@ -20,7 +20,7 @@ class AnswerInline(admin.TabularInline):
         }
 
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ('quiz', 'category', 'title', 'transparent', 'display_image', 'created_at')
+    list_display = ('title', 'category', 'quiz', 'created_at')
     list_filter = ('quiz', 'category', 'title')
     search_fields = ('quiz', 'category', 'title',)
     readonly_fields = ('time_ms', 'points', 'created_at', 'updated_at', 'display_image')

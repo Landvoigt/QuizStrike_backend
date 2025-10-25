@@ -1,37 +1,26 @@
 from django.contrib import admin
-from django.utils.html import format_html, format_html_join
-
-from category.models import Category
+from django.utils.html import format_html
 
 from .models import Quiz
 
 
-class CategoryInline(admin.TabularInline):
-    model = Category
-    extra = 0
-    fields = ('title',)
-    classes = ['wide']
-
-    class Media:
-        css = {
-            'all': ('quizstrike/css/admin_custom.css',)
-        }
-
 class QuizAdmin(admin.ModelAdmin):
-    list_display = ('title', 'description', 'created_at')
+    list_display = ('title', 'description', 'question_count', 'created_at')
     search_fields = ('title', 'description')
     list_filter = ('created_at', 'updated_at')
-    readonly_fields = ('created_at', 'updated_at', 'question_list')
+    readonly_fields = ('created_at', 'updated_at', 'question_list', 'category_list')
     ordering = ('title',)
     date_hierarchy = 'created_at'
     list_per_page = 25
-    inlines = [CategoryInline]
     fieldsets = (
         ('Configuration', {
             'fields': ('title', 'description')
         }),
         ('Questions', {
             'fields': ('question_list',)
+        }),
+        ('Categories', {
+            'fields': ('category_list',)
         }),
         ('Creation Information', {
             'fields': ('created_at', 'updated_at')
@@ -40,19 +29,27 @@ class QuizAdmin(admin.ModelAdmin):
 
     def question_list(self, obj):
         questions = obj.questions.all()
-        
         return format_html(
-            "<ul>{}</ul>",
-            format_html_join(
-                "", "<li>{}: {}</li>",
-                ((p.id, p.title) for p in questions)
-            )
+            "<br>".join([
+                "<a href='/admin/question/question/{}/change/' style='line-height: 1.75;'>• {}</a>".format(q.id, q.title)
+                for q in questions
+            ])
         )
     
+    def category_list(self, obj):
+        categories = obj.categories.all()
+        return format_html(
+            "<br>".join([
+                "<a href='/admin/category/category/{}/change/' style='line-height: 1.75;'>• {}</a>".format(c.id, c.title)
+                for c in categories
+            ])
+        )
+
     def question_count(self, obj):
         return obj.questions.count()
 
     question_list.short_description = "Questions"
     question_count.short_description = "Question Count"
+    category_list.short_description = "Categories"
 
 admin.site.register(Quiz, QuizAdmin)

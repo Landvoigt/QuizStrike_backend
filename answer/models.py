@@ -4,7 +4,7 @@ from question.models import Question
 
 
 class Answer(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    question = models.ForeignKey(Question, related_name="answers", on_delete=models.CASCADE)
     text = models.CharField(max_length=2048)
     correct = models.BooleanField(default=False)
     active = models.BooleanField(default=True)
