@@ -20,4 +20,8 @@ ENV DJANGO_SETTINGS_MODULE=quizstrike.settings
 ENV PYTHONUNBUFFERED=1
 ENV DEBUG=False
 
-ENTRYPOINT ["sh", "-c", "python manage.py collectstatic --noinput && python manage.py compilemessages && gunicorn quizstrike.wsgi:application --bind 0.0.0.0:8002 --workers 3"]
+RUN python manage.py collectstatic --noinput \
+    && python manage.py compilemessages
+
+# ENTRYPOINT ["sh", "-c", "python manage.py collectstatic --noinput && python manage.py compilemessages && gunicorn quizstrike.wsgi:application --bind 0.0.0.0:8002 --workers 3"]
+CMD ["gunicorn", "quizstrike.wsgi:application", "--bind", "0.0.0.0:8002", "--workers", "3"]
