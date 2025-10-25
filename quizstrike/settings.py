@@ -18,7 +18,7 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     '212.227.161.51',
-    '212.227.161.51:8000',
+    '212.227.161.51:8002',
     'server-timvoigt.ch',
     'www.server-timvoigt.ch',
     'quizstrike.timvoigt.ch',
