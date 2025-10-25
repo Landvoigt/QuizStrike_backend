@@ -1,10 +1,13 @@
 import os
 import environ
+import mimetypes
 from pathlib import Path
 from corsheaders.defaults import default_headers
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+mimetypes.add_type("text/css", ".css", True)
 
 env = environ.Env()
 environ.Env.read_env()
@@ -21,6 +24,7 @@ ALLOWED_HOSTS = [
     '212.227.161.51:8002',
     'server-timvoigt.ch',
     'www.server-timvoigt.ch',
+    'timvoigt.ch',
     'quizstrike.timvoigt.ch',
 ]
 
@@ -78,19 +82,23 @@ CORS_ALLOWED_ORIGINS = [
   'http://localhost',
   'http://localhost:4200',
   'http://localhost:8000',  
+  'https://timvoigt.ch',
+  'https://server-timvoigt.ch',
 ]
 
-CORS_ALLOW_HEADERS = list(default_headers) + [
-    'baggage',
-    'sentry-trace',
-]
+CORS_ALLOW_CREDENTIALS = True
+
+# CORS_ALLOW_HEADERS = list(default_headers) + [
+#     'baggage',
+#     'sentry-trace',
+# ]
 
 ROOT_URLCONF = 'quizstrike.urls'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'DIRS': [BASE_DIR / 'quizstrike/templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
