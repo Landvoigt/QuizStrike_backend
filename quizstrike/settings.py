@@ -22,10 +22,8 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     '212.227.161.51',
     '212.227.161.51:8002',
-    'server-timvoigt.ch',
-    'www.server-timvoigt.ch',
-    'timvoigt.ch',
     'quizstrike.timvoigt.ch',
+    'quizstrike-server.timvoigt.ch',
 ]
 
 INSTALLED_APPS = [
@@ -73,9 +71,8 @@ CSRF_TRUSTED_ORIGINS = [
   'http://127.0.0.1:8000',
   'http://localhost:8000',  
   'http://localhost:4200',
-  'https://server-timvoigt.ch',
-  'https://timvoigt.ch',
   'https://quizstrike.timvoigt.ch',
+  'https://quizstrike-server.timvoigt.ch',
 ]
 
 CORS_ALLOWED_ORIGINS = [
@@ -83,7 +80,7 @@ CORS_ALLOWED_ORIGINS = [
   'http://localhost:4200',
   'http://localhost:8000',  
   'https://timvoigt.ch',
-  'https://server-timvoigt.ch',
+  'https://quizstrike.timvoigt.ch',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
