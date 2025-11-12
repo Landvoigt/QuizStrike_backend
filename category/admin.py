@@ -4,7 +4,7 @@ from .models import Category
 
 
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ('title', 'quiz_list', 'created_at')
+    list_display = ('title', 'quiz_list', 'question_count', 'created_at')
     search_fields = ('title',)
     list_filter = ('title', 'created_at')
     readonly_fields = ('created_at',)
@@ -17,6 +17,9 @@ class CategoryAdmin(admin.ModelAdmin):
         return ", ".join([q.title for q in obj.quizzes.all()])
     quiz_list.short_description = "Quiz"
 
+    def question_count(self, obj):
+        return obj.questions.count()
+
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         if db_field.name == "quizzes":
             from quiz.models import Quiz
@@ -24,5 +27,7 @@ class CategoryAdmin(admin.ModelAdmin):
             if quizzes.count() == 1:
                 kwargs["initial"] = quizzes
         return super().formfield_for_manytomany(db_field, request, **kwargs)
+    
+    question_count.short_description = "Question Count"
 
 admin.site.register(Category, CategoryAdmin)
