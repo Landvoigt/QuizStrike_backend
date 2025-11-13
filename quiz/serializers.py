@@ -6,7 +6,6 @@ from .models import Quiz
 
 
 class QuizSerializer(serializers.ModelSerializer):
-    questions = QuestionSerializer(many=True, read_only=True)
     class Meta:
         model = Quiz
-        fields = '__all__'
+        fields = ['id', 'title', 'description', 'active', 'created_at', 'updated_at']

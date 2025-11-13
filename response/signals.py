@@ -18,6 +18,7 @@ def update_score_after_response(sender, instance, created, **kwargs):
 
     if answer.correct:
         score.score += question.points
+        score.time_only_correct += instance.time
 
     score.time += instance.time
     score.save()

@@ -8,9 +8,13 @@ from .models import Question
 
 class QuestionSerializer(serializers.ModelSerializer):
     answers = AnswerSerializer(many=True)
+    category_title = serializers.SerializerMethodField()
     class Meta:
         model = Question
         fields = '__all__'
+
+    def get_category_title(self, obj):
+        return obj.category.title if obj.category else None
 
     def validate_answers(self, value):
         if len(value) != 4:
