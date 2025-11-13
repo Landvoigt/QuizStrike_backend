@@ -9,6 +9,7 @@ class Score(models.Model):
     player = models.ForeignKey(Player, related_name="scores", on_delete=models.CASCADE)
     score = models.IntegerField(default=0)
     time = models.IntegerField(default=0)
+    time_only_correct = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
