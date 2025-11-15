@@ -11,7 +11,7 @@ from .models import Response
 class ResponseSerializer(serializers.ModelSerializer):
     player_name = serializers.CharField(write_only=True, required=True)
     question_id = serializers.IntegerField(write_only=True)
-    answer_id = serializers.IntegerField(write_only=True)
+    answer_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
 
     class Meta:
         model = Response
@@ -21,10 +21,14 @@ class ResponseSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         player_name = validated_data.pop("player_name")
         question_id = validated_data.pop("question_id")
-        answer_id = validated_data.pop("answer_id")
+        answer_id = validated_data.pop("answer_id", None)
 
         question = Question.objects.get(id=question_id)
-        answer = Answer.objects.get(id=answer_id)
+        
+        answer = None
+        if answer_id is not None:
+            answer = Answer.objects.get(id=answer_id)
+
         quiz = question.quiz
 
         player, _ = Player.objects.get_or_create(name=player_name)
