@@ -1,9 +1,48 @@
 from rest_framework.viewsets import ModelViewSet
+from rest_framework import generics
+from rest_framework import status
+from rest_framework.response import Response as DRFResponse
+from rest_framework.views import APIView
+
+from django.db import transaction
+
+from answer.models import Answer
+from player.models import Player
+from question.models import Question
 
 from .models import Response
-from .serializers import ResponseSerializer
+from .serializers import ResponseSerializer, ResponseStartSerializer, ResponseFinishSerializer
 
 class ResponseViewSet(ModelViewSet):
     queryset = Response.objects.all()
     serializer_class = ResponseSerializer
-    
+
+
+class ResponseStartView(generics.CreateAPIView):
+    serializer_class = ResponseStartSerializer
+
+
+class ResponseFinishView(APIView):
+    serializer_class = ResponseFinishSerializer
+
+    @transaction.atomic
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        try:
+            player = Player.objects.get(name=data["player_name"])
+            question = Question.objects.get(id=data["question_id"])
+            score = player.scores.get(quiz=question.quiz)
+            instance = Response.objects.get(score=score, question=question)
+        except (Player.DoesNotExist, Question.DoesNotExist, Response.DoesNotExist):
+            return DRFResponse({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
+
+        instance.time = data["time"]
+        if data.get("answer_id") is not None:
+            instance.answer = Answer.objects.get(id=data["answer_id"])
+        instance.save()
+
+        return DRFResponse({"status": "ok"}, status=status.HTTP_200_OK)
