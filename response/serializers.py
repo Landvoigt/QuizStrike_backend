@@ -49,8 +49,45 @@ class ResponseStartSerializer(serializers.ModelSerializer):
         return response_instance
 
 
-class ResponseFinishSerializer(serializers.Serializer):
+class ResponseFinishSerializer(serializers.ModelSerializer):
+    answer_id = serializers.IntegerField(required=False)
     player_name = serializers.CharField()
     question_id = serializers.IntegerField()
-    answer_id = serializers.IntegerField(required=False, allow_null=True)
-    time = serializers.IntegerField()
+
+    class Meta:
+        model = Response
+        fields = ("player_name", "question_id", "time", "answer_id")
+
+    def validate(self, attrs):
+        try:
+            player = Player.objects.get(name=attrs["player_name"])
+        except Player.DoesNotExist:
+            raise serializers.ValidationError("Player not found")
+
+        try:
+            question = Question.objects.get(id=attrs["question_id"])
+        except Question.DoesNotExist:
+            raise serializers.ValidationError("Question not found")
+
+        try:
+            score = player.scores.get(quiz=question.quiz)
+        except:
+            raise serializers.ValidationError("Score not found")
+
+        try:
+            response = Response.objects.get(score=score, question=question)
+        except Response.DoesNotExist:
+            raise serializers.ValidationError("Response not found")
+
+        attrs["instance"] = response
+        return attrs
+
+    def update(self, instance, validated_data):
+        instance.time = validated_data["time"]
+
+        answer_id = validated_data.get("answer_id")
+        if answer_id is not None:
+            instance.answer = Answer.objects.get(id=answer_id)
+
+        instance.save()
+        return instance
