@@ -6,17 +6,16 @@ from .models import Response
 
 @receiver(post_save, sender=Response)
 def update_score_after_response(sender, instance, created, **kwargs):
-    if not created:
+    if created:
         return
 
     score = instance.score
     question = instance.question
-    answer = instance.answer
 
-    if not (score and question and answer):
+    if not (score and question):
         return
 
-    if answer and answer.correct:
+    if instance.answer and instance.answer.correct:
         score.score += question.points
         score.time_only_correct += instance.time
 

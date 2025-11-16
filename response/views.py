@@ -30,19 +30,7 @@ class ResponseFinishView(APIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        data = serializer.validated_data
-
-        try:
-            player = Player.objects.get(name=data["player_name"])
-            question = Question.objects.get(id=data["question_id"])
-            score = player.scores.get(quiz=question.quiz)
-            instance = Response.objects.get(score=score, question=question)
-        except (Player.DoesNotExist, Question.DoesNotExist, Response.DoesNotExist):
-            return DRFResponse({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
-
-        instance.time = data["time"]
-        if data.get("answer_id") is not None:
-            instance.answer = Answer.objects.get(id=data["answer_id"])
-        instance.save()
+        instance = serializer.validated_data["instance"]
+        serializer.update(instance, serializer.validated_data)
 
         return DRFResponse({"status": "ok"}, status=status.HTTP_200_OK)
