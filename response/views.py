@@ -6,10 +6,6 @@ from rest_framework.views import APIView
 
 from django.db import transaction
 
-from answer.models import Answer
-from player.models import Player
-from question.models import Question
-
 from .models import Response
 from .serializers import ResponseSerializer, ResponseStartSerializer, ResponseFinishSerializer
 
