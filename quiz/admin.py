@@ -5,11 +5,12 @@ from .models import Quiz
 
 
 class QuizAdmin(admin.ModelAdmin):
-    list_display = ('title', 'description', 'question_count', 'created_at')
+    list_display = ('id', 'title', 'description', 'question_count', 'created_at')
+    list_display_links = ('title',)
     search_fields = ('title', 'description')
     list_filter = ('created_at', 'updated_at')
     readonly_fields = ('created_at', 'updated_at', 'question_list', 'category_list')
-    ordering = ('title',)
+    ordering = ('id',)
     date_hierarchy = 'created_at'
     list_per_page = 25
     fieldsets = (

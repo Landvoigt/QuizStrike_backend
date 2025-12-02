@@ -15,10 +15,11 @@ class ResponseInline(admin.TabularInline):
 
 class ScoreAdmin(admin.ModelAdmin):
     list_display = ('score', 'player', 'time', 'created_at')
+    list_display_links = ('player',)
     search_fields = ('score', 'player', 'time',)
     list_filter = ('score', 'player', 'time', 'created_at')
     readonly_fields = ('created_at',)
-    ordering = ('score',)
+    ordering = ('-score',)
     date_hierarchy = 'created_at'
     list_per_page = 25
     inlines = [ResponseInline]
