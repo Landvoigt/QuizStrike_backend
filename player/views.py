@@ -1,7 +1,6 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework import status
-from question.serializers import QuestionSerializer
 from quiz.serializers import QuizSerializer
 from response.models import Response as ResponseModel
 
@@ -31,28 +30,17 @@ class PlayerViewSet(ModelViewSet):
 
         score, _ = Score.objects.get_or_create(player=player, quiz=quiz)
 
-        answered_question_ids = set(
-            ResponseModel.objects.filter(score=score)
-            .values_list("question_id", flat=True)
-        )
+        answered_count = ResponseModel.objects.filter(score=score).count()
 
-        all_questions = quiz.questions.all()
-        remaining_questions = all_questions.exclude(id__in=answered_question_ids)
-
-        quiz_completed = remaining_questions.count() == 0
-
-        remaining_questions_json = QuestionSerializer(remaining_questions, many=True).data
-        quiz_json = QuizSerializer(quiz).data
+        total_questions = quiz.questions.count()
+        quiz_completed = answered_count >= total_questions
 
         return Response({
             "exists": not created,
             "player_id": player.id,
             "score_id": score.id,
             "quiz_completed": quiz_completed,
-
-            "answered_questions": list(answered_question_ids),
-
-            "remaining_questions": remaining_questions_json,
-
-            "quiz": quiz_json
+            "answered_questions_count": answered_count,
+            "total_questions": total_questions,
+            "quiz": QuizSerializer(quiz).data
         })

@@ -20,11 +20,12 @@ class AnswerInline(admin.TabularInline):
         }
 
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ('title', 'category', 'quiz', 'created_at')
+    list_display = ('id', 'title', 'category', 'quiz', 'created_at')
+    list_display_links = ('title',)
     list_filter = ('quiz', 'category', 'title')
     search_fields = ('quiz', 'category', 'title',)
     readonly_fields = ('time_ms', 'points', 'created_at', 'updated_at', 'display_image')
-    ordering = ('title',)
+    ordering = ('id',)
     inlines = [AnswerInline]
     fieldsets = (
         ('Selection', {

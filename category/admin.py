@@ -4,11 +4,11 @@ from .models import Category
 
 
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ('title', 'quiz_list', 'question_count', 'created_at')
+    list_display = ('id', 'title', 'quiz_list', 'question_count', 'created_at')
+    list_display_links = ('title',)
     search_fields = ('title',)
     list_filter = ('title', 'created_at')
     readonly_fields = ('created_at',)
-    ordering = ('title',)
     date_hierarchy = 'created_at'
     list_per_page = 25
     filter_horizontal = ('quizzes',)

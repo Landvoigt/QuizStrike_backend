@@ -3,9 +3,15 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import include, path
 
+from quizstrike.views import QuestionStartView, QuestionFinishView
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    path('api/start/', QuestionStartView.as_view(), name='question-start'),
+    path('api/finish/', QuestionFinishView.as_view(), name='question-finish'),
+
     path('api/', include('answer.urls')),
     path('api/', include('category.urls')),
     path('api/', include('player.urls')),
