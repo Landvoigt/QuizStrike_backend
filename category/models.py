@@ -6,6 +6,8 @@ from quiz.models import Quiz
 class Category(models.Model):
     quizzes = models.ManyToManyField("quiz.Quiz", related_name="categories")
     title = models.CharField(max_length=256, unique=True)
+    image = models.ImageField(upload_to='images/', null=True, blank=True)
+    transparent = models.BooleanField(default=False)
     active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
