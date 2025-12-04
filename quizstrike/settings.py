@@ -15,7 +15,7 @@ environ.Env.read_env()
 
 SECRET_KEY = env("SECRET_KEY")
 
-DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
+DEBUG = os.environ.get("DEBUG", "True") == "True"
 
 INSTALLED_APPS = [
     # other
