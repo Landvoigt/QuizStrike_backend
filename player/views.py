@@ -40,7 +40,7 @@ class PlayerViewSet(ModelViewSet):
             "player_id": player.id,
             "score_id": score.id,
             "quiz_completed": quiz_completed,
-            "answered_questions_count": answered_count,
+            "answered_questions": answered_count,
             "total_questions": total_questions,
             "quiz": QuizSerializer(quiz).data
         })
