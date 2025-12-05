@@ -14,13 +14,10 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY entrypoint.sh /app/entrypoint.sh
-RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
-
 COPY . .
 
 ENV DJANGO_SETTINGS_MODULE=quizstrike.settings
 ENV PYTHONUNBUFFERED=1
 ENV DEBUG=False
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+ENTRYPOINT ["sh", "-c", "python manage.py collectstatic --noinput && gunicorn devknowhow.wsgi:application --bind 0.0.0.0:8002 --workers 5"]
