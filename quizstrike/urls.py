@@ -1,12 +1,16 @@
 from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import JsonResponse
 from django.urls import include, path
 
 from quizstrike.views import QuestionStartView, QuestionFinishView
 
+def api_root(request):
+    return JsonResponse({"message": "Quizstrike_backend API is running."})
 
 urlpatterns = [
+    path('', api_root),
     path('admin/', admin.site.urls),
 
     path('api/start/', QuestionStartView.as_view(), name='question-start'),
