@@ -6,6 +6,17 @@ from answer.models import Answer
 from .models import Question
 
 
+def activate(modeladmin, request, queryset):
+    updated_count = queryset.update(active=True)
+    modeladmin.message_user(request, f"{updated_count} successfully activated questions.")
+
+def deactivate(modeladmin, request, queryset):
+    updated_count = queryset.update(active=False)
+    modeladmin.message_user(request, f"{updated_count} successfully deactivated questions.")
+
+activate.short_description = "Activate selected questions"
+deactivate.short_description = "Deactivate selected questions"
+
 class AnswerInline(admin.TabularInline):
     model = Answer
     extra = 4
@@ -29,6 +40,7 @@ class QuestionAdmin(admin.ModelAdmin):
     readonly_fields = ('time_ms', 'points', 'created_at', 'updated_at', 'display_image')
     ordering = ('id',)
     inlines = [AnswerInline]
+    actions = [activate, deactivate, 'delete_selected']
     fieldsets = (
         ('Selection', {
             'fields': ('quiz', 'category')
@@ -40,7 +52,7 @@ class QuestionAdmin(admin.ModelAdmin):
             'fields': ('time_ms', 'points')
         }),
         ('Creation Information', {
-            'fields': ('created_at', 'updated_at')
+            'fields': ('active', 'created_at', 'updated_at')
         }),
     )
 
