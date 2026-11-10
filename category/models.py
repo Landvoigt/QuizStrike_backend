@@ -21,7 +21,6 @@ class Category(models.Model):
     
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        from quiz.models import Quiz
         if self.quizzes.count() == 0:
             quizzes = Quiz.objects.all()
             if quizzes.count() == 1:
