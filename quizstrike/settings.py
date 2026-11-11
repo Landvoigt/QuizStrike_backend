@@ -15,7 +15,7 @@ environ.Env.read_env()
 
 SECRET_KEY = env("SECRET_KEY")
 
-DEBUG = os.environ.get("DEBUG", "True") == "True"
+DEBUG = env.bool("DEBUG", default=False)
 
 if DEBUG:
     ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
@@ -38,8 +38,8 @@ else:
     sentry_sdk.init(
         dsn=env("SENTRY_URL"),
         data_collection={"user_info": True},
-        traces_sample_rate=1.0,
-        profile_session_sample_rate=1.0,
+        traces_sample_rate=env.float("SENTRY_TRACES_SAMPLE_RATE", default=0.1),
+        profile_session_sample_rate=env.float("SENTRY_PROFILE_SESSION_SAMPLE_RATE", default=0.1),
         profile_lifecycle="trace",
         ignore_errors=[
             "django.core.exceptions.DisallowedHost",
