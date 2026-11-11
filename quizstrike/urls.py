@@ -21,7 +21,6 @@ urlpatterns = [
     path('api/', include('player.urls')),
     path('api/', include('question.urls')),
     path('api/', include('quiz.urls')),
-    path('api/', include('response.urls')),
     path('api/', include('score.urls')),
 ]
 

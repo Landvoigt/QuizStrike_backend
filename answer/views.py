@@ -1,8 +1,8 @@
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from .models import Answer
 from .serializers import AnswerSerializer
 
-class AnswerViewSet(ModelViewSet):
-    queryset = Answer.objects.all()
+class AnswerViewSet(ReadOnlyModelViewSet):
+    queryset = Answer.objects.visible()
     serializer_class = AnswerSerializer

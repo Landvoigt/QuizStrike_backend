@@ -1,8 +1,8 @@
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from .models import Quiz
 from .serializers import QuizSerializer
 
-class QuizViewSet(ModelViewSet):
-    queryset = Quiz.objects.all()
+class QuizViewSet(ReadOnlyModelViewSet):
+    queryset = Quiz.objects.filter(active=True)
     serializer_class = QuizSerializer

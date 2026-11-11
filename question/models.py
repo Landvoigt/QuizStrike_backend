@@ -4,6 +4,11 @@ from quiz.models import Quiz
 from category.models import Category
 
 
+class QuestionQuerySet(models.QuerySet):
+    def visible(self):
+        return self.filter(active=True, category__active=True)
+
+
 class Question(models.Model):
     quiz = models.ForeignKey(Quiz, related_name='questions', on_delete=models.CASCADE)
     title = models.CharField(max_length=512, unique=True)
@@ -16,6 +21,8 @@ class Question(models.Model):
     active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = QuestionQuerySet.as_manager()
 
     def __str__(self):
         return self.title
