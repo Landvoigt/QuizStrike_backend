@@ -10,7 +10,13 @@ class Response(models.Model):
     question = models.ForeignKey(Question, related_name="responses", on_delete=models.CASCADE)
     answer = models.ForeignKey(Answer, related_name="responses", on_delete=models.CASCADE, null=True, blank=True)
     time = models.IntegerField(default=0)
+    finished_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["score", "question"], name="unique_response_per_score_question"),
+        ]
 
     def __str__(self):
         return f"{self.score.player.name} → {self.question.title}"

@@ -60,6 +60,7 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'baggage',
     'sentry-trace',
+    'x-player-token',
 ]
 
 ROOT_URLCONF = "quizstrike.urls"
@@ -161,3 +162,5 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+QUIZ_ANSWER_GRACE_MS = 2000
