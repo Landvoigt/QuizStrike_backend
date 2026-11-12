@@ -22,7 +22,8 @@ def create_quiz(question_count=1, points=3, title="Quiz"):
     category = Category.objects.create(title=f"{title} category")
     correct_answers = []
     for i in range(question_count):
-        question = Question.objects.create(quiz=quiz, category=category, title=f"{title} question {i}", points=points)
+        question = Question.objects.create(category=category, title=f"{title} question {i}", points=points)
+        question.quiz.add(quiz)
         correct_answers.append(Answer.objects.create(question=question, text="right", correct=True))
         for text in ("wrong 1", "wrong 2", "wrong 3"):
             Answer.objects.create(question=question, text=text)
@@ -229,6 +230,72 @@ class QuizFlowTests(TestCase):
 
         self.assertEqual(len(seen), 5)
         self.assertTrue(start(self.client, quiz).data["quiz_completed"])
+
+
+class SharedQuestionTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.quiz_a, (self.shared, self.only_a) = create_quiz(question_count=2, title="A")
+        self.quiz_b, (self.only_b,) = create_quiz(question_count=1, title="B")
+        self.shared.question.quiz.add(self.quiz_b)
+
+    def play(self, quiz):
+        titles = []
+        while not (started := start(self.client, quiz).data)["quiz_completed"]:
+            titles.append(started["question"]["title"])
+            correct = Answer.objects.get(question_id=started["question"]["id"], correct=True)
+            self.assertEqual(finish(self.client, started["response_id"], correct.id).status_code, 200)
+        return titles
+
+    def test_shared_question_is_played_in_every_quiz_it_belongs_to(self):
+        self.assertCountEqual(self.play(self.quiz_a), ["A question 0", "A question 1"])
+        self.assertCountEqual(self.play(self.quiz_b), ["A question 0", "B question 0"])
+
+        self.assertEqual(Score.objects.get(quiz=self.quiz_a).score, 6)
+        self.assertEqual(Score.objects.get(quiz=self.quiz_b).score, 6)
+
+    def test_quiz_list_contains_all_active_quizzes_with_question_count(self):
+        Quiz.objects.create(title="Hidden", active=False)
+        self.only_a.question.quiz.add(self.quiz_b)
+        Question.objects.filter(pk=self.only_b.question_id).update(active=False)
+
+        quizzes = {q["title"]: q["question_count"] for q in self.client.get("/api/quiz/").data}
+
+        self.assertEqual(quizzes, {"A": 2, "B": 2})
+        self.assertEqual(join(self.client, self.quiz_b).data["quiz"]["question_count"], 2)
+
+    def test_admin_form_assigns_existing_questions_to_a_new_quiz(self):
+        from django.contrib.auth.models import User
+
+        admin = User.objects.create_superuser("admin", "admin@example.com", "pw")
+        self.client.force_login(admin)
+        response = self.client.post("/admin/quiz/quiz/add/", {
+            "title": "C",
+            "description": "",
+            "active": "on",
+            "questions": [self.shared.question_id, self.only_b.question_id],
+        })
+
+        self.assertEqual(response.status_code, 302)
+        quiz_c = Quiz.objects.get(title="C")
+        self.assertCountEqual(quiz_c.questions.values_list("id", flat=True), [self.shared.question_id, self.only_b.question_id])
+        self.assertIn(self.quiz_a, self.shared.question.quiz.all())
+
+    def test_admin_pages_render(self):
+        from django.contrib.auth.models import User
+
+        self.client.force_login(User.objects.create_superuser("admin", "admin@example.com", "pw"))
+        category = self.shared.question.category
+        category.quizzes.add(self.quiz_a)
+        join(APIClient(), self.quiz_a)
+        for url in (
+            "/admin/quiz/quiz/", f"/admin/quiz/quiz/{self.quiz_a.id}/change/", "/admin/quiz/quiz/add/",
+            "/admin/question/question/", f"/admin/question/question/{self.shared.question_id}/change/",
+            "/admin/category/category/", f"/admin/category/category/{category.id}/change/",
+            f"/admin/player/player/{Score.objects.get(quiz=self.quiz_a).player_id}/change/",
+        ):
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, 200)
 
 
 class InactiveObjectsTests(TestCase):

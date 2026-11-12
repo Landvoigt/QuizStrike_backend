@@ -33,10 +33,11 @@ class AnswerInline(admin.TabularInline):
         }
 
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'category', 'quiz', 'created_at')
+    list_display = ('id', 'title', 'category', 'quiz_list', 'created_at')
     list_display_links = ('title',)
-    list_filter = ('quiz', 'category', 'title')
-    search_fields = ('quiz', 'category', 'title',)
+    list_filter = ('quiz', 'category', 'active')
+    search_fields = ('title', 'category__title', 'quiz__title')
+    filter_horizontal = ('quiz',)
     readonly_fields = ('time_ms', 'points', 'created_at', 'updated_at', 'display_image')
     ordering = ('id',)
     inlines = [AnswerInline]
@@ -55,6 +56,13 @@ class QuestionAdmin(admin.ModelAdmin):
             'fields': ('active', 'created_at', 'updated_at')
         }),
     )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('category').prefetch_related('quiz')
+
+    def quiz_list(self, obj):
+        return ", ".join(quiz.title for quiz in obj.quiz.all())
+    quiz_list.short_description = 'Quizzes'
 
     def time_ms(self, obj):
         if obj and obj.time is not None:

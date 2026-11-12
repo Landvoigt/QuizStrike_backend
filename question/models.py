@@ -10,7 +10,7 @@ class QuestionQuerySet(models.QuerySet):
 
 
 class Question(models.Model):
-    quiz = models.ForeignKey(Quiz, related_name='questions', on_delete=models.CASCADE)
+    quiz = models.ManyToManyField(Quiz, related_name='questions')
     title = models.CharField(max_length=512, unique=True)
     description = models.CharField(max_length=2048, blank=True, null=True)
     category = models.ForeignKey(Category, related_name='questions', on_delete=models.CASCADE)

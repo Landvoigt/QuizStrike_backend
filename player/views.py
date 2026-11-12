@@ -22,7 +22,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
             return Response({"error": "name and quizId are required"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            quiz = Quiz.objects.get(id=quiz_id, active=True)
+            quiz = Quiz.objects.with_question_count().get(id=quiz_id, active=True)
         except Quiz.DoesNotExist:
             return Response({"error": "Quiz not found"}, status=404)
 
