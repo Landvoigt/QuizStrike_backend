@@ -12,18 +12,18 @@ class CategoryAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'image_preview')
     date_hierarchy = 'created_at'
     list_per_page = 25
-    filter_horizontal = ('quizzes',)
-    fields = ('quizzes', 'title', 'image', 'image_preview', 'transparent', 'active', 'created_at')
+    filter_horizontal = ('quiz',)
+    fields = ('quiz', 'title', 'image', 'image_preview', 'transparent', 'active', 'created_at')
 
     def quiz_list(self, obj):
-        return ", ".join([q.title for q in obj.quizzes.all()])
+        return ", ".join([q.title for q in obj.quiz.all()])
     quiz_list.short_description = "Quiz"
 
     def question_count(self, obj):
         return obj.questions.count()
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
-        if db_field.name == "quizzes":
+        if db_field.name == "quiz":
             from quiz.models import Quiz
             quizzes = Quiz.objects.all()
             if quizzes.count() == 1:

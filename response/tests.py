@@ -286,7 +286,7 @@ class SharedQuestionTests(TestCase):
 
         self.client.force_login(User.objects.create_superuser("admin", "admin@example.com", "pw"))
         category = self.shared.question.category
-        category.quizzes.add(self.quiz_a)
+        category.quiz.add(self.quiz_a)
         join(APIClient(), self.quiz_a)
         for url in (
             "/admin/quiz/quiz/", f"/admin/quiz/quiz/{self.quiz_a.id}/change/", "/admin/quiz/quiz/add/",

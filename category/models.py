@@ -4,7 +4,7 @@ from quiz.models import Quiz
 
 
 class Category(models.Model):
-    quizzes = models.ManyToManyField("quiz.Quiz", related_name="categories")
+    quiz = models.ManyToManyField("quiz.Quiz", related_name="categories")
     title = models.CharField(max_length=256, unique=True)
     image = models.ImageField(upload_to='images/', null=True, blank=True)
     transparent = models.BooleanField(default=False)
@@ -21,7 +21,7 @@ class Category(models.Model):
     
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        if self.quizzes.count() == 0:
+        if self.quiz.count() == 0:
             quizzes = Quiz.objects.all()
             if quizzes.count() == 1:
-                self.quizzes.add(quizzes.first())
+                self.quiz.add(quizzes.first())

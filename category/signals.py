@@ -6,5 +6,5 @@ from .models import Category
 
 @receiver([post_save, post_delete], sender=Category)
 def update_quiz_timestamp(sender, instance, **kwargs):
-    for quiz in instance.quizzes.all():
+    for quiz in instance.quiz.all():
         quiz.save()
