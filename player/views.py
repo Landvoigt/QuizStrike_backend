@@ -9,6 +9,7 @@ from score.models import Score
 
 from .models import Player
 from .serializers import PlayerJoinSerializer, PlayerSerializer
+from .throttles import JoinRateThrottle
 
 class PlayerViewSet(ReadOnlyModelViewSet):
     queryset = Player.objects.filter(active=True)
@@ -28,6 +29,15 @@ class PlayerViewSet(ReadOnlyModelViewSet):
             quiz = Quiz.objects.with_question_count().get(id=quiz_id, active=True)
         except Quiz.DoesNotExist:
             return Response({"error": "Quiz not found"}, status=404)
+
+        if not Score.objects.filter(player__name=name, quiz=quiz).exists():
+            throttle = JoinRateThrottle()
+            if not throttle.allow_request(request, self):
+                wait = throttle.wait()
+                return Response(
+                    {"error": "Too many new players from this network, try again later", "retry_after": wait and int(wait)},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                )
 
         player, created = Player.objects.get_or_create(name=name)
 

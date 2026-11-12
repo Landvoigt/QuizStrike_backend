@@ -1,4 +1,6 @@
 import os
+import sys
+import tempfile
 import environ
 import mimetypes
 from pathlib import Path
@@ -164,3 +166,23 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 QUIZ_ANSWER_GRACE_MS = 2000
+
+# New players per IP address; rejoining with a valid token is not counted.
+# Disabled while running the test suite, which joins far more often.
+TESTING = sys.argv[1:2] == ["test"]
+JOIN_RATE_LIMIT = None if TESTING else env("JOIN_RATE_LIMIT", default="25/day")
+
+REST_FRAMEWORK = {
+    # Number of reverse proxies in front of the app. The client IP is read from
+    # that many entries from the end of X-Forwarded-For, so it cannot be spoofed.
+    "NUM_PROXIES": env.int("NUM_PROXIES", default=1),
+}
+
+# File based, so all gunicorn workers share the same rate limit counters.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+        "LOCATION": Path(tempfile.gettempdir()) / "quizstrike_cache",
+        "OPTIONS": {"MAX_ENTRIES": 50000},
+    }
+}
