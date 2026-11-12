@@ -10,6 +10,8 @@ class QuizQuerySet(models.QuerySet):
 class Quiz(models.Model):
     title = models.CharField(max_length=256, unique=True)
     description = models.CharField(max_length=2048, blank=True, null=True)
+    image = models.ImageField(upload_to='images/', null=True, blank=True)
+    transparent = models.BooleanField(default=False)
     active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

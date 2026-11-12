@@ -2,7 +2,7 @@ from django import forms
 from django.contrib import admin
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.urls import reverse
-from django.utils.html import format_html_join
+from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
 
 from question.models import Question
@@ -19,7 +19,7 @@ class QuizAdminForm(forms.ModelForm):
 
     class Meta:
         model = Quiz
-        fields = ('title', 'description', 'active')
+        fields = ('title', 'description', 'image', 'transparent', 'active')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -33,13 +33,13 @@ class QuizAdmin(admin.ModelAdmin):
     list_display_links = ('title',)
     search_fields = ('title', 'description')
     list_filter = ('active', 'created_at', 'updated_at')
-    readonly_fields = ('created_at', 'updated_at', 'category_list')
+    readonly_fields = ('created_at', 'updated_at', 'category_list', 'image_preview')
     ordering = ('id',)
     date_hierarchy = 'created_at'
     list_per_page = 25
     fieldsets = (
         ('Configuration', {
-            'fields': ('title', 'description', 'active')
+            'fields': ('title', 'description', 'image', 'image_preview', 'transparent', 'active')
         }),
         ('Questions', {
             'fields': ('questions',)
@@ -65,6 +65,12 @@ class QuizAdmin(admin.ModelAdmin):
                 for c in obj.categories.all()
             ),
         )
+
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html('<img src="{}" width="100" />', obj.image.url)
+        return "No image"
+    image_preview.short_description = 'Image Preview'
 
     def question_count(self, obj):
         return obj.questions.count()

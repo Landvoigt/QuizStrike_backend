@@ -2,8 +2,9 @@ import threading
 from datetime import timedelta
 
 from django.conf import settings
+from django.core.cache import cache
 from django.db import connection
-from django.test import TestCase, TransactionTestCase, skipUnlessDBFeature
+from django.test import TestCase, TransactionTestCase, override_settings, skipUnlessDBFeature
 from django.utils import timezone
 from rest_framework.test import APIClient
 
@@ -347,11 +348,11 @@ class InactiveObjectsTests(TestCase):
         Player.objects.filter(name="hidden").update(active=False)
 
         self.assertEqual({p["name"] for p in self.client.get("/api/player/").data}, {"visible"})
-        self.assertEqual({s["player"]["name"] for s in self.client.get("/api/score/").data}, {"visible"})
+        self.assertEqual({s["player"]["name"] for s in self.client.get("/api/score/", {"quiz": self.quiz.id}).data}, {"visible"})
 
     def test_scores_do_not_leak_responses_or_tokens(self):
         start(self.client, self.quiz)
-        score = self.client.get("/api/score/").data[0]
+        score = self.client.get("/api/score/", {"quiz": self.quiz.id}).data[0]
         self.assertNotIn("responses", score)
         self.assertNotIn("token", score)
 
@@ -450,10 +451,19 @@ class PlayerTokenTests(TestCase):
 
         self.assertEqual(finish(self.client, response_id, self.correct.id).status_code, 200)
 
+    def test_non_ascii_token_is_rejected_without_crashing(self):
+        response_id = start(self.client, self.quiz, "lisa").data["response_id"]
+
+        for token in ("é", "ÿ" * 43):
+            with self.subTest(token=token):
+                self.assertEqual(start(self.client, self.quiz, "lisa", token=token).status_code, 403)
+                self.assertEqual(join(self.client, self.quiz, "lisa", token=token).status_code, 409)
+                self.assertEqual(finish(self.client, response_id, None, token=token).status_code, 403)
+
     def test_token_is_not_exposed_by_list_endpoints(self):
         token = join(self.client, self.quiz, "lisa").data["token"]
 
-        for url in ("/api/score/", "/api/player/"):
+        for url in (f"/api/score/?quiz={self.quiz.id}", "/api/player/"):
             self.assertNotIn(token, self.client.get(url).content.decode())
 
 
@@ -586,3 +596,93 @@ class ReviewFixTests(TestCase):
 
         self.assertEqual(self.post_question((False, True, False, False)).status_code, 302)
         self.assertEqual(Question.objects.get(title="New question").answers.filter(correct=True).count(), 1)
+
+
+class QuizImageAndScoreFilterTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.quiz_a, _ = create_quiz(title="A")
+        self.quiz_b, _ = create_quiz(title="B")
+
+    def test_quiz_image_is_a_relative_path_or_null(self):
+        Quiz.objects.filter(pk=self.quiz_a.pk).update(image="images/quiz-a.png", transparent=True)
+
+        quizzes = {q["title"]: q for q in self.client.get("/api/quiz/").data}
+
+        self.assertEqual(quizzes["A"]["image"], "/media/images/quiz-a.png")
+        self.assertTrue(quizzes["A"]["transparent"])
+        self.assertIsNone(quizzes["B"]["image"])
+        self.assertFalse(quizzes["B"]["transparent"])
+        self.assertEqual(join(self.client, self.quiz_a).data["quiz"]["image"], "/media/images/quiz-a.png")
+
+    def test_scores_are_filtered_by_quiz_and_ranked(self):
+        for name in ("lisa", "max"):
+            join(self.client, self.quiz_a, name)
+        join(self.client, self.quiz_b, "tom")
+        Score.objects.filter(player__name="lisa").update(score=2, time=5000)
+        Score.objects.filter(player__name="max").update(score=2, time=3000)
+
+        scores = self.client.get("/api/score/", {"quiz": self.quiz_a.id}).data
+
+        self.assertEqual([s["player"]["name"] for s in scores], ["max", "lisa"])
+        self.assertEqual(set(scores[0]), {"id", "score", "time", "player"})
+        self.assertEqual(scores[0]["player"], {"name": "max"})
+
+    def test_score_list_needs_a_valid_quiz_id(self):
+        for params in ({}, {"quiz": "abc"}, {"quiz": ""}):
+            with self.subTest(params=params):
+                self.assertEqual(self.client.get("/api/score/", params).status_code, 400)
+
+        response = self.client.get("/api/score/", {"quiz": 999999})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, [])
+
+    def test_scores_of_inactive_quizzes_are_hidden(self):
+        join(self.client, self.quiz_a, "lisa")
+        Quiz.objects.filter(pk=self.quiz_a.pk).update(active=False)
+
+        self.assertEqual(self.client.get("/api/score/", {"quiz": self.quiz_a.id}).data, [])
+
+
+@override_settings(
+    JOIN_RATE_LIMIT="5/hour",
+    CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}},
+)
+class JoinRateLimitTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.client = APIClient()
+        self.quiz, _ = create_quiz()
+
+    def test_sixth_new_player_from_the_same_ip_is_rejected(self):
+        for i in range(5):
+            self.assertEqual(join(self.client, self.quiz, f"player {i}").status_code, 200)
+
+        rejected = join(self.client, self.quiz, "player 5")
+
+        self.assertEqual(rejected.status_code, 429)
+        self.assertGreater(rejected.data["retry_after"], 0)
+        self.assertFalse(Player.objects.filter(name="player 5").exists())
+
+    def test_rejoining_and_other_ips_are_not_limited(self):
+        tokens = [join(self.client, self.quiz, f"player {i}").data["token"] for i in range(5)]
+
+        for _ in range(3):
+            self.assertEqual(join(self.client, self.quiz, "player 0", token=tokens[0]).status_code, 200)
+        self.assertEqual(join(self.client, self.quiz, "player 0").status_code, 409)
+
+        other_ip = self.client.post(
+            "/api/player/", {"name": "elsewhere", "quizId": self.quiz.id}, format="json", REMOTE_ADDR="10.0.0.9"
+        )
+        self.assertEqual(other_ip.status_code, 200)
+
+    def test_forwarded_header_cannot_be_spoofed_to_evade_the_limit(self):
+        def join_via_proxy(name, spoofed):
+            return self.client.post(
+                "/api/player/", {"name": name, "quizId": self.quiz.id}, format="json",
+                HTTP_X_FORWARDED_FOR=f"{spoofed}, 203.0.113.7",
+            )
+
+        for i in range(5):
+            self.assertEqual(join_via_proxy(f"player {i}", f"1.2.3.{i}").status_code, 200)
+        self.assertEqual(join_via_proxy("player 5", "9.9.9.9").status_code, 429)
