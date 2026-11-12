@@ -27,4 +27,4 @@ class Score(models.Model):
         return f"{self.player.name} - {self.quiz.title} ({self.score} pts)"
 
     def has_token(self, token):
-        return bool(token) and secrets.compare_digest(self.token, token)
+        return bool(token) and secrets.compare_digest(self.token.encode(), token.encode())
