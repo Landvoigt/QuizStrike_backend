@@ -5,9 +5,5 @@ from .serializers import ScoreSerializer
 
 
 class ScoreViewSet(ReadOnlyModelViewSet):
-    queryset = (
-        Score.objects.filter(player__active=True)
-        .select_related("player")
-        .prefetch_related("responses__question", "responses__answer")
-    )
+    queryset = Score.objects.filter(player__active=True).select_related("player")
     serializer_class = ScoreSerializer

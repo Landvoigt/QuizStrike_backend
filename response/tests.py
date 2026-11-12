@@ -297,6 +297,12 @@ class InactiveObjectsTests(TestCase):
         self.assertEqual({p["name"] for p in self.client.get("/api/player/").data}, {"visible"})
         self.assertEqual({s["player"]["name"] for s in self.client.get("/api/score/").data}, {"visible"})
 
+    def test_scores_do_not_leak_responses_or_tokens(self):
+        start(self.client, self.quiz)
+        score = self.client.get("/api/score/").data[0]
+        self.assertNotIn("responses", score)
+        self.assertNotIn("token", score)
+
 
 class WriteAccessTests(TestCase):
     def setUp(self):
