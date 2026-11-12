@@ -33,8 +33,6 @@ class QuestionStartView(APIView):
             return DRFResponse({"error": "Invalid player token"}, status=status.HTTP_403_FORBIDDEN)
 
         with transaction.atomic():
-            # Lock this player's score row: concurrent start requests of the same
-            # player run one after another and never receive the same question.
             Score.objects.select_for_update().filter(pk=score.pk).first()
 
             answered_ids = Response.objects.filter(score=score).values("question_id")
@@ -64,6 +62,7 @@ class QuestionStartView(APIView):
                 answer=None,
                 time=question.time,
             )
+            Score.objects.filter(pk=score.pk).update(time=F("time") + question.time, updated_at=timezone.now())
 
         return DRFResponse({
             "quiz_completed": False,
@@ -84,8 +83,6 @@ class QuestionFinishView(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        # Lock the response row: a second, concurrent finish request waits here
-        # until the first one has committed and then sees finished_at already set.
         response = (
             Response.objects.select_for_update(of=("self",))
             .select_related("question", "score")
@@ -113,8 +110,6 @@ class QuestionFinishView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-        # The server-measured time includes network latency and image loading, so the
-        # client's timer is trusted as long as it lies within the grace period below it.
         grace = settings.QUIZ_ANSWER_GRACE_MS
         now = timezone.now()
         elapsed = int((now - response.created_at).total_seconds() * 1000)
@@ -127,6 +122,7 @@ class QuestionFinishView(APIView):
         if timed_out:
             answer = None
 
+        charged_time = response.time
         response.answer = answer
         response.time = max(0, min(measured, question.time))
         response.finished_at = now
@@ -135,11 +131,9 @@ class QuestionFinishView(APIView):
         correct = answer is not None and answer.correct
         points = question.points if correct else 0
 
-        # Increment atomically in the database (UPDATE ... SET score = score + x),
-        # so no points are lost when requests run concurrently.
         Score.objects.filter(pk=response.score_id).update(
             score=F("score") + points,
-            time=F("time") + response.time,
+            time=F("time") + response.time - charged_time,
             time_only_correct=F("time_only_correct") + (response.time if correct else 0),
             updated_at=now,
         )

@@ -4,7 +4,7 @@ from response.models import Response
 
 
 class QuestionStartSerializer(serializers.Serializer):
-    player_name = serializers.CharField()
+    player_name = serializers.CharField(max_length=100)
     quiz_id = serializers.IntegerField()
 
 

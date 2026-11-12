@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.core.exceptions import ValidationError
+from django.forms.models import BaseInlineFormSet
 from django.utils.html import format_html
 
 from answer.models import Answer
@@ -17,8 +19,20 @@ def deactivate(modeladmin, request, queryset):
 activate.short_description = "Activate selected questions"
 deactivate.short_description = "Deactivate selected questions"
 
+class AnswerInlineFormSet(BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        correct = sum(
+            1 for form in self.forms
+            if form.cleaned_data.get("correct") and not form.cleaned_data.get("DELETE")
+        )
+        if correct != 1:
+            raise ValidationError("Exactly one answer must be marked as correct.")
+
+
 class AnswerInline(admin.TabularInline):
     model = Answer
+    formset = AnswerInlineFormSet
     extra = 4
     min_num = 4
     max_num = 4

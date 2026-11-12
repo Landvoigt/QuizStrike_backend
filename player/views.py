@@ -8,18 +8,21 @@ from quiz.models import Quiz
 from score.models import Score
 
 from .models import Player
-from .serializers import PlayerSerializer
+from .serializers import PlayerJoinSerializer, PlayerSerializer
 
 class PlayerViewSet(ReadOnlyModelViewSet):
     queryset = Player.objects.filter(active=True)
     serializer_class = PlayerSerializer
 
     def create(self, request, *args, **kwargs):
-        name = request.data.get("name")
-        quiz_id = request.data.get("quizId")
-
-        if not name or not quiz_id:
-            return Response({"error": "name and quizId are required"}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = PlayerJoinSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {"error": "A name (max. 100 characters) and a valid quizId are required", "details": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        name = serializer.validated_data["name"]
+        quiz_id = serializer.validated_data["quizId"]
 
         try:
             quiz = Quiz.objects.with_question_count().get(id=quiz_id, active=True)
@@ -28,8 +31,6 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
         player, created = Player.objects.get_or_create(name=name)
 
-        # Each player+quiz combination gets its own token: the same name can play
-        # another quiz from another browser, but nobody else can take over a running one.
         score, score_created = Score.objects.get_or_create(player=player, quiz=quiz)
         if not score_created and not score.has_token(request.headers.get("X-Player-Token")):
             return Response({"error": "Name already taken"}, status=status.HTTP_409_CONFLICT)

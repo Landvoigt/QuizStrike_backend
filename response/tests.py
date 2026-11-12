@@ -508,10 +508,99 @@ class ConcurrencyTests(TransactionTestCase):
 
     def test_parallel_start_hands_out_distinct_questions(self):
         quiz, _ = create_quiz(question_count=8)
-        start(APIClient(), quiz)  # create player and score up front
+        start(APIClient(), quiz)
         Response.objects.all().delete()
 
         results = self.run_parallel(lambda: start(APIClient(), quiz).data)
 
         question_ids = [r["question"]["id"] for r in results]
         self.assertEqual(len(set(question_ids)), 8)
+
+
+class ReviewFixTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.quiz, self.correct_answers = create_quiz(question_count=3)
+
+    def login_admin(self):
+        from django.contrib.auth.models import User
+
+        self.client.force_login(User.objects.create_superuser("admin", "admin@example.com", "pw"))
+
+    def test_abandoned_questions_cost_the_full_time_limit(self):
+        start(self.client, self.quiz)
+        start(self.client, self.quiz)
+
+        self.assertEqual(Score.objects.get().time, 20000)
+
+    def test_finishing_replaces_the_charged_time_with_the_measured_time(self):
+        started = start(self.client, self.quiz).data
+        self.assertEqual(Score.objects.get().time, 10000)
+
+        correct = Answer.objects.get(question_id=started["question"]["id"], correct=True)
+        finish(self.client, started["response_id"], correct.id, time=1500)
+
+        score = Score.objects.get()
+        self.assertGreaterEqual(score.time, 0)
+        self.assertLess(score.time, 2000)
+        self.assertEqual(score.time, score.time_only_correct)
+
+    def test_invalid_join_input_is_rejected_with_400(self):
+        for data in (
+            {"name": "x" * 101, "quizId": self.quiz.id},
+            {"name": "   ", "quizId": self.quiz.id},
+            {"name": "lisa", "quizId": "abc"},
+            {"name": "lisa"},
+            {},
+        ):
+            with self.subTest(data=data):
+                response = self.client.post("/api/player/", data, format="json")
+                self.assertEqual(response.status_code, 400)
+                self.assertIn("error", response.data)
+
+    def test_join_trims_the_player_name(self):
+        token = join(self.client, self.quiz, "  lisa ").data["token"]
+
+        self.assertTrue(Player.objects.filter(name="lisa").exists())
+        self.assertEqual(join(self.client, self.quiz, "lisa").status_code, 409)
+        self.assertEqual(start(self.client, self.quiz, " lisa ", token=token).status_code, 201)
+
+    def test_score_admin_search_works(self):
+        join(self.client, self.quiz, "lisa")
+        self.login_admin()
+
+        response = self.client.get("/admin/score/score/", {"q": "lisa"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "lisa")
+
+    def post_question(self, correct_flags):
+        data = {
+            "quiz": [self.quiz.id],
+            "category": self.correct_answers[0].question.category_id,
+            "title": "New question",
+            "description": "",
+            "active": "on",
+            "answers-TOTAL_FORMS": "4",
+            "answers-INITIAL_FORMS": "0",
+            "answers-MIN_NUM_FORMS": "4",
+            "answers-MAX_NUM_FORMS": "4",
+        }
+        for i, correct in enumerate(correct_flags):
+            data[f"answers-{i}-text"] = f"answer {i}"
+            if correct:
+                data[f"answers-{i}-correct"] = "on"
+        return self.client.post("/admin/question/question/add/", data)
+
+    def test_admin_requires_exactly_one_correct_answer(self):
+        self.login_admin()
+
+        for flags in ((False, False, False, False), (True, True, False, False)):
+            with self.subTest(flags=flags):
+                response = self.post_question(flags)
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, "Exactly one answer must be marked as correct.")
+        self.assertFalse(Question.objects.filter(title="New question").exists())
+
+        self.assertEqual(self.post_question((False, True, False, False)).status_code, 302)
+        self.assertEqual(Question.objects.get(title="New question").answers.filter(correct=True).count(), 1)
