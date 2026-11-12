@@ -16,12 +16,14 @@ urlpatterns = [
     path('api/start/', QuestionStartView.as_view(), name='question-start'),
     path('api/finish/', QuestionFinishView.as_view(), name='question-finish'),
 
-    path('api/', include('answer.urls')),
-    path('api/', include('category.urls')),
     path('api/', include('player.urls')),
-    path('api/', include('question.urls')),
     path('api/', include('quiz.urls')),
     path('api/', include('score.urls')),
+
+    # Disabled - exposing question catalogue
+    # path('api/', include('answer.urls')),
+    # path('api/', include('category.urls')),
+    # path('api/', include('question.urls')),
 ]
 
 if settings.DEBUG:

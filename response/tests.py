@@ -81,15 +81,12 @@ class QuizFlowTests(TestCase):
         self.assertEqual(len(answers), 4)
         self.assertTrue(all("correct" not in answer for answer in answers))
 
-    def test_list_endpoints_do_not_reveal_the_solution(self):
+    def test_question_catalog_is_not_exposed(self):
         create_quiz()
 
-        answers = list(self.client.get("/api/answer/").data)
-        answers += self.client.get("/api/question/").data[0]["answers"]
-        answers += self.client.get("/api/category/").data[0]["questions"][0]["answers"]
-
-        self.assertEqual(len(answers), 12)
-        self.assertTrue(all("correct" not in answer for answer in answers))
+        for url in ("/api/question/", "/api/answer/", "/api/category/"):
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, 404)
 
     def test_correct_answer_adds_points_and_server_measured_time(self):
         quiz, (correct,) = create_quiz(points=3)
@@ -323,8 +320,6 @@ class InactiveObjectsTests(TestCase):
         Category.objects.update(active=False)
 
         self.assertTrue(start(self.client, self.quiz).data["quiz_completed"])
-        self.assertEqual(self.get_ids("/api/question/"), set())
-        self.assertEqual(self.get_ids("/api/category/"), set())
 
     def test_inactive_quiz_cannot_be_listed_or_started(self):
         token = join(self.client, self.quiz).data["token"]
@@ -336,15 +331,6 @@ class InactiveObjectsTests(TestCase):
             self.client.post("/api/player/", {"name": "p", "quizId": self.quiz.id}, format="json").status_code, 404
         )
 
-    def test_list_endpoints_hide_inactive_objects(self):
-        self.assertNotIn(self.inactive_question.id, self.get_ids("/api/question/"))
-        category_question_ids = {q["id"] for q in self.client.get("/api/category/").data[0]["questions"]}
-        self.assertNotIn(self.inactive_question.id, category_question_ids)
-        self.assertEqual(len(category_question_ids), 2)
-        self.assertFalse(
-            Answer.objects.filter(question=self.inactive_question, id__in=self.get_ids("/api/answer/")).exists()
-        )
-
     def test_inactive_answers_are_not_shown(self):
         hidden = Answer.objects.filter(correct=False).exclude(question=self.inactive_question).first()
         hidden.active = False
@@ -354,7 +340,6 @@ class InactiveObjectsTests(TestCase):
         for _ in range(2):
             shown |= {a["id"] for a in start(self.client, self.quiz).data["question"]["answers"]}
         self.assertNotIn(hidden.id, shown)
-        self.assertNotIn(hidden.id, self.get_ids("/api/answer/"))
 
     def test_inactive_players_are_hidden_from_players_and_scores(self):
         start(self.client, self.quiz, player_name="hidden")
@@ -383,9 +368,6 @@ class WriteAccessTests(TestCase):
     def test_content_and_score_endpoints_are_read_only(self):
         objects = {
             "quiz": self.quiz,
-            "category": self.question.category,
-            "question": self.question,
-            "answer": self.correct,
             "score": self.score,
             "player": self.player,
         }
