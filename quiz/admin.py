@@ -11,7 +11,6 @@ from .models import Quiz
 
 
 class QuizAdminForm(forms.ModelForm):
-    # Reverse side of Question.quiz, so questions can be picked while editing a quiz.
     questions = forms.ModelMultipleChoiceField(
         queryset=Question.objects.select_related('category').order_by('category__title', 'title'),
         required=False,
